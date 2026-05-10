@@ -1,0 +1,6 @@
+-r requirements.txt
+# 선택 사항: 로컬 대형 모델 실험용. Streamlit Cloud에서는 설치하지 마세요.
+# transformers>=4.53.0
+# accelerate>=0.30.0
+# safetensors>=0.4.3
+# sentencepiece>=0.2.0
