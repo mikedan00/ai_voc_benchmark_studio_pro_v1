@@ -296,7 +296,7 @@ VOC 기반 개선 사항을 추적하기 위한 로그, 대시보드, 알림 기
 """.strip()
 
 
-def build_rag_answer_prompt(*, question: str, context: str, preset_key: str = "rag_evidence", custom_instruction: str = "") -> str:
+def build_rag_answer_prompt(question: str, context: str, preset_key: str = "rag_evidence", custom_instruction: str = "") -> str:
     instruction = get_prompt_instruction(preset_key, custom_instruction)
     return f"""
 [역할/작업 지시]
@@ -322,7 +322,6 @@ def build_rag_answer_prompt(*, question: str, context: str, preset_key: str = "r
 
 
 def build_voc_insight_report_prompt(
-    *,
     payload: dict[str, Any],
     model_info_str: str,
     analysis: dict[str, Any] | None = None,

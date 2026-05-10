@@ -527,7 +527,7 @@ with voc_tab:
     table_mode = st.toggle("테이블 보기", value=True)
     render_voc_table(st.session_state.get("voc_list", [])) if table_mode else render_voc_cards(st.session_state.get("voc_list", []))
     if st.session_state.get("voc_list"):
-        st.download_button("⬇️ VOC CSV", rows_to_csv_bytes(st.session_state["voc_list"]), "voc_items.csv", "text/csv")
+        st.download_button("⬇️ VOC CSV", rows_to_csv_bytes(st.session_state["voc_list"]), "voc_items.csv", "text/csv", key="download_voc_csv_collect_tab")
 
 with upload_tab:
     st.markdown("## 📎 파일 업로드 → VOC/RAG 지식화")
@@ -579,7 +579,12 @@ with rag_tab:
     with c2:
         if st.button("💬 RAG 답변 생성", disabled=not (chunks and st.session_state["engine_ready"]), use_container_width=True):
             hits, context = run_rag_search(st.session_state["rag_query"], top_k)
-            prompt = build_rag_answer_prompt(st.session_state["rag_query"], context, preset_key="rag_evidence", custom_instruction=st.session_state.get("custom_prompt_instruction", ""))
+            prompt = build_rag_answer_prompt(
+                question=st.session_state["rag_query"],
+                context=context,
+                preset_key="rag_evidence",
+                custom_instruction=st.session_state.get("custom_prompt_instruction", ""),
+            )
             with st.spinner("답변 생성 중..."):
                 answer = api_engine.generate(prompt, max_tokens=1800, temperature=0.15)
             st.session_state["rag_hits"] = hits; st.session_state["rag_context"] = context; st.session_state["rag_answer"] = answer
@@ -612,7 +617,14 @@ with analysis_tab:
             rag_context = st.session_state.get("rag_context", "")
             if st.session_state["engine_ready"]:
                 payload = build_voc_report_payload(st.session_state["voc_list"])
-                prompt = build_voc_insight_report_prompt(payload, target, st.session_state.get("analysis") or {}, rag_context=rag_context, preset_key="executive_report", custom_instruction=st.session_state.get("custom_prompt_instruction", ""))
+                prompt = build_voc_insight_report_prompt(
+                    payload=payload,
+                    model_info_str=target,
+                    analysis=st.session_state.get("analysis") or {},
+                    rag_context=rag_context,
+                    preset_key="executive_report",
+                    custom_instruction=st.session_state.get("custom_prompt_instruction", ""),
+                )
                 with st.spinner("리포트 생성 중..."):
                     try:
                         st.session_state["voc_report_text"] = api_engine.generate(prompt, max_tokens=3600, temperature=0.12)
@@ -776,13 +788,13 @@ with report_tab:
     rpt1, rpt2, rpt3 = st.tabs(["VOC 리포트", "SRS", "벤치마킹 보고서"])
     with rpt1:
         if st.session_state.get("voc_report_text"):
-            st.download_button("⬇️ Markdown", st.session_state["voc_report_text"].encode("utf-8"), "voc_insight_report.md", "text/markdown")
+            st.download_button("⬇️ Markdown", st.session_state["voc_report_text"].encode("utf-8"), "voc_insight_report.md", "text/markdown", key="download_voc_report_md")
             st.markdown(st.session_state["voc_report_text"])
         else:
             st.info("VOC 분석 탭에서 리포트를 생성하세요.")
     with rpt2:
         if st.session_state.get("srs_text"):
-            st.download_button("⬇️ SRS Markdown", st.session_state["srs_text"].encode("utf-8"), "srs.md", "text/markdown")
+            st.download_button("⬇️ SRS Markdown", st.session_state["srs_text"].encode("utf-8"), "srs.md", "text/markdown", key="download_srs_md")
             st.markdown(st.session_state["srs_text"])
         else:
             st.info("VOC 분석 탭에서 SRS를 생성하세요.")
@@ -792,10 +804,10 @@ with report_tab:
             fname = safe_filename("benchmark_report")
             meta = {"title": "벤치마킹 보고서", "subtitle": "VOC/스펙/전략 통합 분석", "author": "AI VOC Benchmark Studio Pro"}
             cdl1, cdl2, cdl3 = st.columns(3)
-            cdl1.download_button("⬇️ Markdown", md.encode("utf-8"), f"{fname}.md", "text/markdown", use_container_width=True)
+            cdl1.download_button("⬇️ Markdown", md.encode("utf-8"), f"{fname}.md", "text/markdown", use_container_width=True, key="download_benchmark_md")
             try:
-                cdl2.download_button("⬇️ Word DOCX", markdown_to_docx_bytes(md, meta), f"{fname}.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", use_container_width=True)
-                cdl3.download_button("⬇️ PowerPoint PPTX", markdown_to_pptx_bytes(md, meta), f"{fname}.pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation", use_container_width=True)
+                cdl2.download_button("⬇️ Word DOCX", markdown_to_docx_bytes(md, meta), f"{fname}.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", use_container_width=True, key="download_benchmark_docx")
+                cdl3.download_button("⬇️ PowerPoint PPTX", markdown_to_pptx_bytes(md, meta), f"{fname}.pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation", use_container_width=True, key="download_benchmark_pptx")
             except Exception as exc:
                 st.error(f"Office 변환 오류: {exc}")
             st.markdown(md)
@@ -814,9 +826,9 @@ with export_tab:
         "spec_comparison": st.session_state.get("spec_comparison", {}),
         "rag_hits": st.session_state.get("rag_hits", []),
     }
-    st.download_button("⬇️ 전체 JSON", json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8"), "studio_full_export.json", "application/json")
+    st.download_button("⬇️ 전체 JSON", json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8"), "studio_full_export.json", "application/json", key="download_full_json")
     if st.session_state.get("voc_list"):
-        st.download_button("⬇️ VOC CSV", rows_to_csv_bytes(st.session_state["voc_list"]), "voc_items.csv", "text/csv")
+        st.download_button("⬇️ VOC CSV", rows_to_csv_bytes(st.session_state["voc_list"]), "voc_items.csv", "text/csv", key="download_voc_csv_export_tab")
     for label, key, mime in [
         ("VOC/SRS DOCX", "last_docx_path", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
         ("VOC/SRS PPTX", "last_pptx_path", "application/vnd.openxmlformats-officedocument.presentationml.presentation"),
@@ -824,9 +836,9 @@ with export_tab:
     ]:
         path = st.session_state.get(key) or ""
         if path and Path(path).exists():
-            st.download_button(f"⬇️ {label}", Path(path).read_bytes(), Path(path).name, mime)
+            st.download_button(f"⬇️ {label}", Path(path).read_bytes(), Path(path).name, mime, key=f"download_generated_{key}")
     bundle = build_zip_bundle()
-    st.download_button("⬇️ 전체 결과 ZIP", bundle, f"ai_voc_benchmark_export_{datetime.now():%Y%m%d_%H%M%S}.zip", "application/zip", type="primary")
+    st.download_button("⬇️ 전체 결과 ZIP", bundle, f"ai_voc_benchmark_export_{datetime.now():%Y%m%d_%H%M%S}.zip", "application/zip", type="primary", key="download_full_zip")
 
 with help_tab:
     st.markdown("## 🛠 VS Code 실행 / Streamlit 배포")

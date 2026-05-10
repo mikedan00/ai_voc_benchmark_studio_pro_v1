@@ -18,3 +18,8 @@
 ### 안정화
 - 기존 `with main_tab` 중복 구문 수정
 - `python -m py_compile` 통과 확인
+
+## 2026-05-10 - v1.0.1
+- Fixed `StreamlitDuplicateElementId` caused by duplicate `st.download_button` instances.
+- Added explicit `key=` values to all download buttons across VOC, Report, and Export tabs.
+- Verified with `python -m py_compile` and `pytest -q`.
